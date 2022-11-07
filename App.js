@@ -1,40 +1,51 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
-import { Session } from '@supabase/supabase-js';
+import { StyleSheet, Text, View } from 'react-native';
 import { supabase } from './supabase';
-import Auth from './Auth';
+import { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { Button, Input, Text } from '@rneui/themed';
+import Auth from './Auth';
+import { Button, Input } from '@rneui/themed';
 
 export default function App() {
   const [session, setSession] = useState(null);
 
-  const sair = async () => {
-    supabase.auth.signOut();
-  };
-
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session }}) => {
-      setSession(session);
-    })
+    (async () => {
+      try {
+        const { data: { session } } =
+          await supabase.auth.getSession();
+        console.log('getSession');
+        setSession(session);
+      } catch(error) {
+        console.log(error);
+      }
 
     supabase.auth.onAuthStateChange((evt, session) => {
-      setSession(session);
-    });
+        console.log('authChange');
+        setSession(session);
+      });
+    })();
   }, []);
+
+  const sair = async () => {
+    const { error } = await supabase.auth.signOut();
+    console.error(error);
+  };
 
   return (
     <View style={styles.container}>
-      {session && session.user ? (
+      {session && session.user ?
         <>
           <Text>Logado como:</Text>
-          <Input value={session.user.email} disabled={true} />
-          <Button title="Sair" onPress={() => sair()}
+          <Input value={session.user.email}
+          disabled={true} />
+          <Button title="Sair"
+            onPress={sair}
           />
-        </>
-      ) : (
-        <Auth />
-      )}
+        </> : (
+          <Auth />
+        )
+      }
     </View>
   );
 }
